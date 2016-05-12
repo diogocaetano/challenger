@@ -1,5 +1,5 @@
-require_relative 'client'
 require_relative 'log'
+require_relative 'client'
 
 class Event
 	
@@ -33,22 +33,15 @@ class Event
 	def envent_seq_top? event_seq_id
 		event_seq_id == @send_event_number ? true : false
 	end
-
-	def method_missing(m, *args, &block)  
-	    puts "There's no method called #{m} here -- please try again."  
-	end 
-
+	
 	def F event_decoded
 		log.info("EVENT"){ "start follow event" }
-		client_c = client.connection event_decoded[:to_user_id]
+		connection = client.connection event_decoded[:to_user_id]
 
-		if client_c
-			p event_decoded[:from_user_id]
-			p event_decoded[:to_user_id]
-			p client.follow(event_decoded[:from_user_id], event_decoded[:to_user_id])
+		if connection
 			event = encode event_decoded
-			client_c.print(event)
-			log.info("EVENT"){ "send event: #{envet}" }
+			connection.print(event)
+			log.info("EVENT"){ "send event: #{event}" }
 		else
 			log.warn("EVENT"){ "user not found: #{event_decoded[:to_user_id]}" }
 		end
@@ -56,11 +49,10 @@ class Event
 
 	def U event_decoded
 		log.info("EVENT"){ "start unfollow event" }
-		client_c = client.connection event_decoded[:to_user_id]
+		connection = client.connection event_decoded[:to_user_id]
 
-		if client_c
+		if connection
 			client.unfollow(event_decoded[:from_user_id], event_decoded[:to_user_id])
-			log.info("EVENT"){ "send event: #{event}" }
 		else
 			log.warn("EVENT"){ "user not found: #{event_decoded[:to_user_id]}" }
 		end
@@ -78,10 +70,10 @@ class Event
 
 	def P event_decoded
 		log.info("EVENT"){ "start private msg event" }
-		client_u = client.connection event_decoded[:to_user_id]
-		if client_u
+		connection = client.connection event_decoded[:to_user_id]
+		if connection
 			event = encode event_decoded
-			client_u.print(event)
+			connection.print(event)
 			log.info("EVENT"){ "send event: #{event}" }
 		else
 			log.warn("EVENT"){ "user not found: #{event_decoded[:to_user_id]}" }
@@ -90,14 +82,14 @@ class Event
 
 	def S event_decoded
 		log.info("EVENT"){ "start status update event" }
-		client_u = client.by_id event_decoded[:from_user_id]
-		if client_u
-			if not client_u[:follow].empty?
-				client_u[:follow].map do |user_id|
-					client_u = client_u.connection user_id
-					if client_u
+		client_user = client.by_id event_decoded[:from_user_id]
+		if client_user
+			if not client_user[:follow].empty?
+				client_user[:follow].map do |user_id|
+					connection = client.connection user_id
+					if connection
 						event = encode event_decoded
-						client_u.print(event)
+						connection.print(event)
 						log.info("EVENT"){ "send event: #{event}" }
 					else
 						log.warn("EVENT"){ "user not found: #{event_decoded[:to_user_id]}" }
@@ -127,7 +119,7 @@ class Event
 		h = Hash[[:seq, :type, :from_user_id, :to_user_id].zip(event.split('|'))]
 		h.merge(h) { |k, v| Integer(v) rescue v }
 	end
-	#recusivamente
+
 	def detect
 		event_to_fire = @buff_events.detect {|event| event[:seq].to_i == @send_event_number }
 		if event_to_fire

@@ -8,7 +8,7 @@ class Client
 		@@clients.compact
 	end
 
-	def log
+   	def self.log
 		log ||= Log.new
 		@log = log.logger
 	end
@@ -28,10 +28,12 @@ class Client
 
 	def self.follow  from_user_id, user_id
 		@@clients[user_id][:follow] << from_user_id
+		log.info("CLIENT"){ "User client #{from_user_id} follow #{user_id}!" }
 	end	
 
 	def self.unfollow  from_user_id, user_id
 		@@clients[user_id][:follow].delete(from_user_id)
+		log.info("CLIENT"){ "User client #{from_user_id} unfollow #{user_id}!" }
 	end
 
 end

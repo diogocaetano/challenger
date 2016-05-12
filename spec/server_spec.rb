@@ -8,7 +8,6 @@ describe Server do
 		expect(TCPSocket).to receive(:open).with(9099)
 		expect(TCPSocket).to receive(:open).with(9090)
 	
-		server = Server.new 	
 	end
 
 end
